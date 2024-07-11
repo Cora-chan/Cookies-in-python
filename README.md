@@ -4,3 +4,6 @@ A python Django applicatin fullfills the following requriements --
 * Please work with cookies (and not local storage) to record how many times a user has seen each color of ball. You should be able to provide a report on users and number of times they saw each color ball.
 * The test should work in any browser (including Chrome). Style as necessary (it is very much appreciated if you do).
 * Code should be written in Javascript and feel free to use a framework for building the page/application. Any cookie functionality should not be abstracted by jQuery or any other module provided by NPM or the like.
+
+  Tech Stack
+  HTML CSS JavsScript Python Django MySQL
