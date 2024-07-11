@@ -1,0 +1,163 @@
+{% load static %}
+
+{% block extrahead %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div id="main">
+        <p id="ball"> </p>
+    </div>
+    <label id="user"></label>
+    <label id="count"></label>
+    <button id="report">Generate Report</button>
+</div>
+
+<style>
+    body {
+        height: 100%;
+        width: 100%;
+    }
+
+    img {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 20px;
+    }
+
+    button,
+    table {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    label {
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+        
+        text-align: center;
+        padding-bottom: 20px;
+    }
+    table {
+        margin-top: 30px;
+        width: 370px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block javascript %}
+    <script>
+        var randomNum = Math.floor(Math.random() * 2);
+        var color = "";
+        var userId = generateUuid();
+        var count = 1;
+
+        function generateUuid() {
+            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        }
+
+        function displayBall(x) {
+            if (x == 0 || x == "red") {
+                $(`<img src="{% static '/images/redBall.png' %}"/>`).insertAfter("#ball");
+                color = 'red';
+            }
+            else if (x == 1 || x == "blue") {
+                $(`<img src="{% static '/images/blueBall.png' %}"/>`).insertAfter("#ball");
+                color = 'blue';
+            }
+        }
+
+        function setCookie(userId, color, count, exdays) {
+            const d = new Date();
+            d.setTime(d.getTime() + (exdays*24*60*60*1000));
+            let expires = "expires="+ d.toUTCString();
+            document.cookie = "username=" + userId + "&color=" + color + "&count=" + count + ";" + expires + ";path=/";
+        }
+
+        function getCookie(cname) {
+            let name = cname + "=";
+            let decodedCookie = decodeURIComponent(document.cookie);
+            let ca = decodedCookie.split(";");
+            for (let i = 0; i < ca.length; i++) {
+                let cl = ca[i].split("&");
+                for (let c of cl) {
+                    while (c.charAt(0) == " ") {
+                        c = c.substring(1);
+                    }
+                    if (c.indexOf(name) == 0) {
+                        return c.substring(name.length, c.length);
+                    }
+                }
+
+            }
+            return "";
+        }
+
+        function checkCookie() {
+            let user = getCookie("username");
+            if (user != "" && user != undefined) {
+                userId = user;
+                color = getCookie("color");
+                count = parseInt(getCookie("count")) + 1;
+                setCookie(userId, color, count, 30);
+                displayBall(color);
+            } else {
+                displayBall(randomNum);
+                setCookie(userId, color, count, 30);
+            }
+            $("#user").text(`User: ${userId}`);
+            $("#count").text(`Count: ${count}`);
+
+            $.ajax({
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                url: window.location.pathname,
+                type: "POST",
+                data: JSON.stringify({
+                    userId: userId,
+                    color: color,
+                    count: count,
+                }),
+                contentType: "application/json; charset=utf-8",
+            })
+        }
+
+        $("#report").click(function() {
+            $('#report_table').remove();
+            tbl = $(
+                `<table id="report_table">
+                    <tr>
+                        <th>User</th>
+                        <th>Color</th>
+                        <th>Count</th>
+                    </tr>
+                </table>`
+            );
+            
+            $.get(`${window.location.pathname + "report"}`, function(data) {
+                for (let d of JSON.parse(data)) {
+                    $("#report_table").append(
+                        `<tr>
+                            <td>${d[0]}</td>
+                            <td>${d[1]}</td>
+                            <td>${d[2]}</td>
+                        </tr>`
+                    )
+                }
+            })
+
+            tbl.insertAfter("#report");
+
+        })
+
+        $(document).ready(function() {
+            checkCookie();
+        })
+    </script>
+{% endblock %}
